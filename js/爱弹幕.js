@@ -2,7 +2,7 @@ muban.短视2.二级.img = '.detail-pic&&img&&data-src';
 var rule = {
     title: '爱弹幕',
     模板: '短视2',
-    host: 'https://anime.girigirilove.com',
+    host: 'https://ani.girigirilove.com',
     homeUrl: '/map/',
     // url:'/show/fyclass--------fypage---/'
     url: '/show/fyclassfyfilter/',
@@ -55,5 +55,38 @@ var rule = {
     推荐: '.border-box&&.public-list-box;a&&title;.lazy&&data-src;.public-list-prb&&Text;a&&href',
     double: false, // 推荐内容是否双层定位
     一级: '.border-box .public-list-box;a&&title;.lazy&&data-src;.public-list-prb&&Text;a&&href',
-    搜索: '.row-right&&.search-box;.thumb-txt&&Text;.lazy&&data-src;.public-list-prb&&Text;a&&href',
+    搜索: `js:
+        function parseList(h) {
+            var d = [];
+            pdfa(h, '.row-right&&.search-box').forEach(function (it) {
+                d.push({
+                    title: pdfh(it, '.thumb-txt&&Text'),
+                    img: pd(it, '.lazy&&data-src'),
+                    desc: pdfh(it, '.public-list-prb&&Text'),
+                    url: pdfh(it, 'a&&href')
+                });
+            });
+            return d;
+        }
+        var html = request(input);
+        var d = parseList(html);
+        // The site now answers searches with a captcha page ("系统提示 / 提交验证")
+        if (d.length === 0 && /verify/.test(html)) {
+            for (var i = 0; i < 3 && d.length === 0; i++) {
+                // 1) fetch captcha image + the session cookie it is tied to
+                var r = JSON.parse(request(HOST + '/verify/index.html', {withHeaders: true, buffer: 2}));
+                var sc = r['set-cookie'] || r['Set-Cookie'] || '';
+                if (Array.isArray(sc)) sc = sc.join(';');
+                var ck = sc.split(';')[0];
+                // 2) OCR the image
+                var code = post('https://api.nn.ci/ocr/b64/text', {body: r.body}).replace(/\\s/g, '');
+                // 3) submit the code (MacCMS standard endpoint)
+                request(HOST + '/index.php/ajax/verify_check?type=search&verify=' + code, {headers: {Cookie: ck}});
+                // 4) retry the search with the verified session
+                html = request(input, {headers: {Cookie: ck}});
+                d = parseList(html);
+            }
+        }
+        setResult(d);
+    `,
 }

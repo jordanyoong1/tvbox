@@ -10,7 +10,7 @@ var rule = {
     searchUrl: 'https://m3u8.girigirilove.com/api.php/Vod/get_list?vod_name=**&offset=fypage&limit=20',
     searchable: 2,
     quickSearch: 0,
-    filterable: 0, // 筛选功能暂时关闭，等其他部分都正常后再加回来
+    filterable: 1, // 筛选功能暂时关闭，等其他部分都正常后再加回来
     class_name: '日番&美番&劇場版&真人番劇&BD副音軌&其他',
     class_url: '2&3&21&20&24&26',
     play_parse: true,
@@ -88,8 +88,9 @@ var rule = {
         var kw = input.match(/vod_name=([^&]*)/)[1];
         try { kw = encodeURIComponent(decodeURIComponent(kw)); } catch (e) {}
         var pg = parseInt(input.match(/offset=(\\d+)/)[1]);
-        var api = 'https://m3u8.girigirilove.com/api.php/Vod/get_list?type_id=&offset=' + ((pg - 1) * 20)
-            + '&limit=20&vod_name=' + kw + '&orderby=';
+        // 真实的搜索请求里没有 type_id 参数，每页 24 条
+        var api = 'https://m3u8.girigirilove.com/api.php/Vod/get_list?offset=' + ((pg - 1) * 24)
+            + '&limit=24&vod_name=' + kw + '&orderby=';
         var json = JSON.parse(request(api));
         var d = [];
         json.info.rows.forEach(function (it) {
